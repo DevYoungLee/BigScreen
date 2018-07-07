@@ -2,22 +2,27 @@ package com.example.android.bigscreen.viewModel;
 
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
+import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
 import android.support.annotation.NonNull;
 import com.example.android.bigscreen.data.Repository;
 import com.example.android.bigscreen.data.RepositoryCallbacks;
 import com.example.android.bigscreen.data.MovieInfo;
+
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivityViewModel extends AndroidViewModel {
 
     private MutableLiveData<ArrayList<MovieInfo>> mMovieInfosLiveData;
+    private LiveData<List<MovieInfo>> mFavoritedMovieInfosLiveData;
     private boolean mIsLoadingData;
     final private Repository mRepository;
 
     public MainActivityViewModel(@NonNull Application application) {
         super(application);
         mRepository = Repository.getRepository(application);
+        mFavoritedMovieInfosLiveData = mRepository.getAllFavoriteMovies();
     }
 
     public MutableLiveData<ArrayList<MovieInfo>> getMovieInfos(){
@@ -26,6 +31,12 @@ public class MainActivityViewModel extends AndroidViewModel {
         }
         return mMovieInfosLiveData;
     }
+
+    public LiveData<List<MovieInfo>> getFavoritedMovieInfosLiveData(){
+        return mFavoritedMovieInfosLiveData;
+    }
+
+
 
     public void setMovieList(String sortBy, int page) {
         mIsLoadingData = true;
@@ -44,22 +55,6 @@ public class MainActivityViewModel extends AndroidViewModel {
     });
     }
 
-    public void setFavoritedMovieList(){
-        mIsLoadingData = true;
-        mRepository.getAllFavoriteMovies(new RepositoryCallbacks<ArrayList<MovieInfo>>() {
-            @Override
-            public void onSuccess(ArrayList<MovieInfo> movieInfos) {
-                mMovieInfosLiveData.postValue(movieInfos);
-                mIsLoadingData = false;
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                throwable.printStackTrace();
-            }
-        });
-
-    }
 
     public boolean ismIsLoadingData(){
         return mIsLoadingData;
@@ -71,10 +66,12 @@ public class MainActivityViewModel extends AndroidViewModel {
             @Override
             public void onSuccess(ArrayList<MovieInfo> movieInfos) {
                 ArrayList<MovieInfo> movieInfoList = mMovieInfosLiveData.getValue();
-                checkForFavoritedMovies(movieInfos);
-                movieInfoList.addAll(movieInfos);
-                mMovieInfosLiveData.postValue(movieInfoList);
-                mIsLoadingData = false;
+                if(movieInfoList != null) {
+                    checkForFavoritedMovies(movieInfos);
+                    movieInfoList.addAll(movieInfos);
+                    mMovieInfosLiveData.postValue(movieInfoList);
+                    mIsLoadingData = false;
+                }
 
 
             }
@@ -88,36 +85,24 @@ public class MainActivityViewModel extends AndroidViewModel {
 
     public void updateSingleMovieInfo(int position, boolean isFavorite){
         ArrayList<MovieInfo> movieInfoList = mMovieInfosLiveData.getValue();
-        movieInfoList.get(position).setFavorite(isFavorite);
-        mMovieInfosLiveData.postValue(movieInfoList);
+        if(movieInfoList != null) {
+            movieInfoList.get(position).setFavorite(isFavorite);
+            mMovieInfosLiveData.postValue(movieInfoList);
+        }
     }
 
     private void checkForFavoritedMovies(final  ArrayList<MovieInfo> movieInfosToBeChecked){
-        mRepository.getAllFavoriteMovies(new RepositoryCallbacks<ArrayList<MovieInfo>>() {
-            @Override
-            public void onSuccess(ArrayList<MovieInfo> movieInfos) {
-                if(movieInfos != null) {
-                    for (int i = 0; i < movieInfosToBeChecked.size(); i++) {
-                        int movieId = movieInfosToBeChecked.get(i).getId();
-                        for (int j = 0; j < movieInfos.size(); j++) {
-                            int favoriteMovieId = movieInfos.get(j).getId();
-                            if (movieId == favoriteMovieId) {
-                                movieInfosToBeChecked.get(i).setFavorite(true);
-                                break;
-
-                            }
-
-                        }
+        ArrayList<MovieInfo> favoritedMovieArrayList = (ArrayList<MovieInfo>) mFavoritedMovieInfosLiveData.getValue();
+        if(favoritedMovieArrayList != null && !favoritedMovieArrayList.isEmpty()) {
+            for (int i = 0; i < movieInfosToBeChecked.size(); i++) {
+                for (int j = 0; j < favoritedMovieArrayList.size(); j++) {
+                    if (favoritedMovieArrayList.get(j).getId() == movieInfosToBeChecked.get(i).getId()) {
+                        movieInfosToBeChecked.get(i).setFavorite(true);
+                        break;
                     }
                 }
             }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-
-            }
-        });
-
+        }
     }
 
 }

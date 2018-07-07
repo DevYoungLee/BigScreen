@@ -1,6 +1,7 @@
 package com.example.android.bigscreen.data;
 
 import android.app.Application;
+import android.arch.lifecycle.LiveData;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -10,6 +11,8 @@ import com.example.android.bigscreen.database.MovieDao;
 import com.example.android.bigscreen.network.NetworkApi;
 import com.example.android.bigscreen.network.NetworkClient;
 import java.util.ArrayList;
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -46,7 +49,7 @@ public class Repository {
             @Override
             public void onResponse(@NonNull Call<MovieList> call, @NonNull Response<MovieList> response) {
                 MovieList movieList = response.body();
-                ArrayList<MovieInfo> movieInfoArrayList = null;
+                ArrayList<MovieInfo> movieInfoArrayList;
                 if (movieList != null) {
                     movieInfoArrayList = movieList.getResults();
                     callbacks.onSuccess(movieInfoArrayList);
@@ -74,7 +77,7 @@ public class Repository {
             @Override
             public void onResponse(@NonNull Call<ReviewList> call, @NonNull Response<ReviewList> response) {
                 ReviewList reviewList = response.body();
-                ArrayList<Review> reviewArrayList = null;
+                ArrayList<Review> reviewArrayList;
                 if (reviewList != null) {
                     reviewArrayList = reviewList.getReviewList();
                     callbacks.onSuccess(reviewArrayList);
@@ -103,7 +106,7 @@ public class Repository {
             @Override
             public void onResponse(@NonNull Call<TrailerList> call, @NonNull Response<TrailerList> response) {
                 TrailerList trailerList = response.body();
-                ArrayList<Trailer> trailerArrayList = null;
+                ArrayList<Trailer> trailerArrayList;
                 if (trailerList != null) {
                     trailerArrayList = trailerList.getTrailerList();
                     callbacks.onSuccess(trailerArrayList);
@@ -121,10 +124,10 @@ public class Repository {
             }
         });
     }
-    public void getAllFavoriteMovies(RepositoryCallbacks<ArrayList<MovieInfo>> callbacks){
+    public LiveData<List<MovieInfo>> getAllFavoriteMovies(){
 
 
-        new GetFavoriteMoviesAsyncTask(movieDao, callbacks).execute();
+        return movieDao.getAllFavoriteMovies();
     }
 
     public void insertFavoriteMovie(MovieInfo movieInfo){
@@ -136,30 +139,6 @@ public class Repository {
     }
 
 
-
-    private static class GetFavoriteMoviesAsyncTask extends AsyncTask<Void, Void, ArrayList<MovieInfo>>{
-
-        final private MovieDao movieDao;
-        final private RepositoryCallbacks<ArrayList<MovieInfo>> callbacks;
-
-        GetFavoriteMoviesAsyncTask(MovieDao movieDao, RepositoryCallbacks<ArrayList<MovieInfo>> callbacks){
-            this.movieDao = movieDao;
-            this.callbacks = callbacks;
-        }
-
-        @Override
-        protected ArrayList<MovieInfo> doInBackground(Void... voids) {
-            return (ArrayList<MovieInfo>) movieDao.getAllFavoriteMovies();
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<MovieInfo> movieInfos) {
-            callbacks.onSuccess(movieInfos);
-            super.onPostExecute(movieInfos);
-        }
-
-
-    }
 
 
     private static class InsertFavoriteMovieAsyncTask extends AsyncTask<MovieInfo, Void, Void>{

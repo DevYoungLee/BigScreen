@@ -5,23 +5,26 @@ import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Parcelable;
-import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.example.android.bigscreen.R;
 import com.example.android.bigscreen.data.MovieInfo;
 import com.example.android.bigscreen.network.NetworkApi;
+import com.example.android.bigscreen.network.NetworkUtils;
 import com.example.android.bigscreen.viewModel.MainActivityViewModel;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private android.support.v7.widget.Toolbar mToolbar;
     private Spinner mSortBySpinner;
     private String sortBy = NetworkApi.SORT_BY_POPULARITY;
+    private Toast mErrorToast;
     private int page = 1;
 
     @Override
@@ -44,19 +48,25 @@ public class MainActivity extends AppCompatActivity {
         connectViewModel();
         connectToolBar();
         connectRecyclerView();
+        Log.d("TEST", "ONCREATE CALLED");
 
-    }
-    @Override
-    protected void onStart() {
-        super.onStart();
-        refreshFavoriesUi();
     }
 
     @Override
     protected void onResume() {
+        Log.d("TEST", "ONRESUMECALLED");
         super.onResume();
         if(mRecyclerViewState != null){
             mGridLayoutManager.onRestoreInstanceState(mRecyclerViewState);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        Log.d("TEST", "ONSTART CALLED");
+        super.onStart();
+        if(mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.favorites))){
+            setListToFavorite();
         }
     }
 
@@ -77,12 +87,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void refreshFavoriesUi(){
-        if(mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.favorites))) {
-            mMainActivityViewModel.setFavoritedMovieList();
-        }
-    }
-
 
 
 
@@ -102,7 +106,16 @@ public class MainActivity extends AppCompatActivity {
         mMainActivityViewModel.getMovieInfos().observe(this, new Observer<ArrayList<MovieInfo>>() {
             @Override
             public void onChanged(@Nullable ArrayList<MovieInfo> movieInfos) {
-                updateUi(movieInfos);
+                if(!mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.favorites))) {
+                    updateUi(movieInfos);
+                }
+            }
+        });
+        mMainActivityViewModel.getFavoritedMovieInfosLiveData().observe(this, new Observer<List<MovieInfo>>() {
+            @Override
+            public void onChanged(@Nullable List<MovieInfo> movieInfos) {
+                if(mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.favorites)))
+                    updateUi((ArrayList<MovieInfo>) movieInfos);
             }
         });
 
@@ -117,21 +130,31 @@ public class MainActivity extends AppCompatActivity {
                 if (mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.popular))) {
                     sortBy = NetworkApi.SORT_BY_POPULARITY;
                     page = 1;
-                    mMainActivityViewModel.setMovieList(sortBy, page);
-                    mRecyclerView.addOnScrollListener(getEndlessOnScrollListener());
+                    if(NetworkUtils.isConnectedToInternet(MainActivity.this)) {
+                        cancelAllToasts();
+                        mMainActivityViewModel.setMovieList(sortBy, page);
+                        mRecyclerView.addOnScrollListener(getEndlessOnScrollListener());
+                    }
+                    else{
+                        showNoInternetAccessToast();
+                    }
 
 
                 }
                 else if (mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.top_rated))) {
                     sortBy = NetworkApi.SORT_BY_RATING;
                     page = 1;
-                    mMainActivityViewModel.setMovieList(sortBy, page);
-                    mRecyclerView.addOnScrollListener(getEndlessOnScrollListener());
+                    if(NetworkUtils.isConnectedToInternet(MainActivity.this)) {
+                        cancelAllToasts();
+                        mMainActivityViewModel.setMovieList(sortBy, page);
+                        mRecyclerView.addOnScrollListener(getEndlessOnScrollListener());
+                    } else {
+                        showNoInternetAccessToast();
+                    }
 
                 }
                 else if (mSortBySpinner.getSelectedItem().toString().equals(getResources().getString(R.string.favorites))){
-                    mMainActivityViewModel.setFavoritedMovieList();
-                    mRecyclerView.clearOnScrollListeners();
+                    setListToFavorite();
                 }
             }
 
@@ -177,9 +200,15 @@ public class MainActivity extends AppCompatActivity {
                 int currentListLength = mRecyclerViewAdapter.getItemCount();
                 boolean isLoadingMoreData = mMainActivityViewModel.ismIsLoadingData();
                 if((currentListLength - lastVisibleItemPosition < visibilityThreshold) && !isLoadingMoreData){
-                    page++;
-                    mMainActivityViewModel.loadMoreData(sortBy, page);
+                    if(NetworkUtils.isConnectedToInternet(MainActivity.this)) {
+                        cancelAllToasts();
+                        page++;
+                        mMainActivityViewModel.loadMoreData(sortBy, page);
+                    } else{
+                        showNoInternetAccessToast();
+                    }
                 }
+
                 super.onScrolled(recyclerView, dx, dy);
             }
         };
@@ -191,4 +220,38 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.swapAdapter(mRecyclerViewAdapter, false);
     }
 
-}
+
+    private void setListToFavorite(){
+        ArrayList<MovieInfo> favoritedMovieInfos = (ArrayList<MovieInfo>) mMainActivityViewModel.getFavoritedMovieInfosLiveData().getValue();
+        updateUi(favoritedMovieInfos);
+        if(favoritedMovieInfos == null || favoritedMovieInfos.isEmpty()){
+            showNoFavoriteMoviesToast();
+        }
+        mRecyclerView.clearOnScrollListeners();
+    }
+
+    private void showNoInternetAccessToast(){
+        mErrorToast = Toast.makeText(
+                MainActivity.this,
+                R.string.no_connection_alert,
+                Toast.LENGTH_LONG);
+        mErrorToast.show();
+    }
+
+    private void showNoFavoriteMoviesToast(){
+        mErrorToast = Toast.makeText(
+                MainActivity.this,
+                R.string.no_favorites_message,
+                Toast.LENGTH_LONG);
+        mErrorToast.show();
+    }
+
+    private void cancelAllToasts(){
+        if(mErrorToast != null)
+            mErrorToast.cancel();
+        }
+
+    }
+
+
+
