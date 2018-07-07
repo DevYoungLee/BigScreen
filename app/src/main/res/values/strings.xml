@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Big Screen</string>
+    <string name="popular">Popular</string>
+    <string name="top_rated">Top-rated</string>
+    <string name="favorites">Favorites</string>
+    <string name="poster_description">Movie Poster</string>
+    <string name="no_connection_alert">To continue, turn on internet access</string>
+    <string name="ok_text">OK</string>
+    <string name="quit_text">Quit</string>
+    <string name="review_text">Reviews</string>
+    <string name="watch_trailer">WATCH TRAILER</string>
+    <string name="favorite_button">Favorite Button</string>
+
+    <string-array name="sort_by_array">
+        <item>Popular</item>
+        <item>Top-rated</item>
+        <item>Favorites</item>
+    </string-array>
+</resources>

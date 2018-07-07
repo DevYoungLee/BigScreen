@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="veryVerySmallMargin">2dp</dimen>
+    <dimen name="verySmallMargin">4dp</dimen>
+    <dimen name="smallMargin">8dp</dimen>
+    <dimen name="largeMargin">12dp</dimen>
+    <dimen name="smallTextSize">12sp</dimen>
+    <dimen name="normalTextSize">18sp</dimen>
+    <dimen name="largeTextSize">30sp</dimen>
+    <dimen name="detailImageSize">350dp</dimen>
+    <dimen name="movie_poster_height">180dp</dimen>
+    <dimen name="movie_poster_width">120dp</dimen>
+</resources>
