@@ -1,5 +1,5 @@
 # BigScreen
-BigScreen is an Android Application written in java that displays images and information about recent movies. <br />
+BigScreen is an Android Application written in Java that displays images and information about recent movies. <br />
 <br >
 The application follows an MVVM architecture <br />
 The data is fetched in JSON format from TheMovieDb Api service using Retrofit. <br />
