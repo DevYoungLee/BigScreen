@@ -21,4 +21,5 @@ Clicking on an image shows detailed information about the movie such as title, s
 ![alt text](screenshots/detail_screen_bottom.png "bottom of detail screen") <br />
 <br />
 To try out the application, sign up for an api key at https://www.themoviedb.org/documentation/api and enter your api key at network/NetworkApi <br />
+Thank you for reading! <br />
 Any suggestions will be greatly appreciated!
