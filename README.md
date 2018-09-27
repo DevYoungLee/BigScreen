@@ -5,6 +5,7 @@ The application follows an MVVM architecture <br />
 The data is fetched in JSON format from TheMovieDb Api service using Retrofit. <br />
 Picasso is used for image loading. <br />
 Room and shared preferences are used for persistent storage <br />
+Recyclerview with GridLayoutManager is used to display the list of titles <br />
 <br />
 The movie titles can be sorted by popular: <br />
 ![alt text](screenshots/main_screen_popular.png "The movie titles can be sorted by popular") <br />
